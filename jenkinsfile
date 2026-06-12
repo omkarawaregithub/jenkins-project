@@ -1,0 +1,189 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'maven3'
+        jdk 'jdk21'
+    }
+
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+        NEXUS_VERSION = 'nexus3'
+        NEXUS_PROTOCOL = 'http'
+        NEXUS_URL = 'Nexus_IP:8081'
+        NEXUS_REPOSITORY = 'devops-repo'
+        NEXUS_REPO_ID = 'devops-repo'
+        NEXUS_CREDENTIALS_ID = 'nexus-cred'
+        ARTVERSION = "${env.BUILD_ID}"
+
+        registrycredential = 'ecr-ap-south-1:awscrdes'
+        registry = 'https://931680509142.dkr.ecr.ap-south-1.amazonaws.com/'
+        IMAGE_NAME = '931680509142.dkr.ecr.ap-south-1.amazonaws.com/'
+    }
+    stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('git Checkout') {
+            steps {
+                git branch: 'main',url: ''
+            }
+        }
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean install -DskipTests'
+            }
+            post {
+                success {
+                    echo 'Maven Build Successful'
+                    archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                }
+            }
+        }
+        stage('unit test') {
+            steps {
+                sh 'mvn test'
+            }
+            post {
+                success {
+                    echo 'Unit Tests Passed'
+                }
+                failure {
+                    echo 'Unit Tests Failed'
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+        stage('integration test') {
+            steps {
+                sh 'mvn verify -DskipUnitTests'
+            }
+            post {
+                success {
+                    echo 'Integration Tests Passed'
+                }
+                failure {
+                    echo 'Integration Tests Failed'
+                    junit '**/target/failsafe-reports/*.xml'
+                }
+            }
+        }
+        stage('sonarQube analysis with checkstyle') {
+            steps {
+                sh 'mvn checkstyle:checkstyle'
+            }
+            post {
+                success {
+                    echo 'Checkstyle analysis completed successfully'
+                    publishHTML(target: [
+                        reportName: 'Checkstyle Report',
+                        reportDir: 'target/site',
+                        reportFiles: 'checkstyle.html',
+                        keepAll: true,
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        includeInEmail: true
+                    ])
+                }
+            }
+        }
+        stage('codeanalysis with sonarqube') {
+            steps {
+                withSonarQubeEnv('sonar-server') {
+                    sh '''${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=devops-project \
+                        -Dsonar.sources=. \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.junit.reportPaths=target/surefire-reports \
+                        -Dsonar.jacoco.reportPaths=target/jacoco.exec \
+                        -Dsonar.java.checkstyle.reportPaths=target/site/checkstyle.xml \
+                    '''    
+                }
+            }
+        }
+        stage('quality gate') {
+            steps {
+              script {
+                timeout(time: 1, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true, credentialID: 'sonar-cred'
+                }
+              }  
+            }
+        }
+        stage('publish to nexus repository') {
+            steps {
+                script{
+                    pom = readMavenPom file: 'pom.xml'
+                    filesByGlob = findFiles(glob: 'target/*.jar')
+                    echo "${filesByGlob[0].name} ${filesByGlob[0].path} ${filesByGlob[0].directory} ${filesByGlob[0].length} ${filesByGlob[0].lastModified}"
+                    artifactPath = filesByGlob[0].path
+                    artifactExists = fileExists artifactPath
+                    if (artifactExists) {
+                        echo "Artifact found at: ${artifactPath}"
+                        nexusArtifactUploader(
+                            nexusVersion: NEXUS_VERSION,
+                            protocol: NEXUS_PROTOCOL,
+                            nexusUrl: NEXUS_URL,
+                            groupId: pom.groupId,
+                            version: ARTVERSION,
+                            repository: NEXUS_REPOSITORY,
+                            credentialsId: NEXUS_CREDENTIALS_ID,
+                            artifacts: [
+                                [artifactId: pom.artifactId, 
+                                classifier: '', 
+                                file: artifactPath, 
+                                type: pom.packaging],
+                                [artifactId: pom.artifactId, 
+                                classifier: '',
+                                files: "pom.xml",
+                                type: 'pom']
+                            ]
+                        )
+                    } else {
+                        error "Artifact not found at path: ${artifactPath}"
+                    } 
+                }    
+            }
+        }
+        stage('OWASP Dependency Check') {
+            steps {
+                sh 'mvn org.owasp:dependency-check-maven:check'
+            }
+            post {
+                success {
+                    echo 'OWASP Dependency Check completed successfully'
+                    publishHTML(target: [
+                        reportName: 'OWASP Dependency Check Report',
+                        reportDir: 'target/dependency-check-report',
+                        reportFiles: 'dependency-check-report.html',
+                        keepAll: true,
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        includeInEmail: true
+                    ])
+                }
+            }
+        }
+        stage('trivy file scan') {
+            steps {
+                sh 'trivy fs --format template --template "@contrib/html.tpl" -o trivy-file-scan-report.html .'
+            }
+            post {
+                success {
+                    echo 'Trivy File Scan completed successfully'
+                    publishHTML(target: [
+                        reportName: 'Trivy File Scan Report',
+                        reportDir: '.',
+                        reportFiles: 'trivy-file-scan-report.html',
+                        keepAll: true,
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        includeInEmail: true
+                    ])
+                }
+            }
+        }    
+    }    
+}
