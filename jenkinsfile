@@ -141,7 +141,8 @@ pipeline {
                                 type: 'pom']
                             ]
                         )
-                    } else {
+                    } 
+                    else {
                         error "Artifact not found at path: ${artifactPath}"
                     } 
                 }    
