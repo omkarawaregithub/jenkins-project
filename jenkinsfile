@@ -185,6 +185,117 @@ pipeline {
                     ])
                 }
             }
+        }
+        stage('build docker image') {
+            steps {
+                script {
+                    //sh 'aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 296021880241.dkr.ecr.ap-south-1.amazonaws.com'
+                    env.IMAGE_TAG = "${IMAGE_NAME}${BUILD_NUMBER}"
+                    sh "docker rmi -f ${IMAGE_NAME}:latest ${env.IMAGE_TAG} || true "
+
+                    dockerImage = docker.build("${IMAGE_NAME}:latest", '.')
+                    sh "docker tag ${IMAGE_NAME}:latest ${env.IMAGE_TAG}"
+                }
+            }
         }    
-    }    
+        stage('trivy scan image') {
+            steps {
+                sh """
+                echo 'Running trivy scan on Docker image : ${env.IMAGE_TAG}'
+                trivy image -f html -o trivy-image-scan-report.html ${env.IMAGE_TAG}
+                trivy image -f table -o trivy-image-scan-report.txt ${env.IMAGE_TAG}
+                """
+                //trivy image --format template --template '@contrib/html.tpl' -o trivy-image-scan-report.html ${IMAGE_NAME}:latest"
+            }
+            post {
+                success {
+                    echo 'Trivy Image Scan completed successfully'
+                    publishHTML(target: [
+                        reportName: 'Trivy Image Scan Report',
+                        reportDir: '.',
+                        reportFiles: 'trivy-image-scan-report.html',
+                        keepAll: true,
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        includeInEmail: true
+                    ])
+                }
+            }
+        }    
+        stage('upload application image to ECR') {
+            steps {
+                script {
+                    docker.withRegistry(registry, registrycredential) {
+                    dockerImage.push("${BUILD_NUMBER}")
+                    sh "docker push ${env.IMAGE_TAG}"
+                    }
+                }
+            }
+        }    
+        stage('Deploy to container') {
+            steps {
+                echo 'Deploying application to container...'
+                script {
+                    sh "docker rm -f devops-repo || true"
+                    sh "docker run -d --name devops-repo -p 8080:8080 ${env.IMAGE_TAG}"
+                }
+                // Add deployment steps here (e.g., using kubectl, docker run, etc.)
+            }
+        }
+        stage('DAST Scan with OWASP ZAP') {
+            steps {
+                echo 'Running DAST scan on deployed application...'
+                def exitCode = sh(script: '''
+                    docker run --rm --user root --network host -v $(pwd):/zap/wrk:rw \
+                    -t http://localhost:8080 \
+                    -r zap_report.html' -J zap_report.json
+                ''', returnStatus: true)
+
+                echo 'ZAP scan completed with exit code: ${exitCode}'
+                if (exitCode != 0) {
+                    error "ZAP scan failed with exit code: ${exitCode}" 
+
+                 publishHTML(target: [
+                    reportName: 'OWASP ZAP DAST Report',
+                    reportDir: '.',
+                    reportFiles: 'zap_report.html',
+                    keepAll: true,
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    includeInEmail: true
+                ])
+                 publishHTML(target: [
+                    reportName: 'OWASP ZAP DAST JSON Report',
+                    reportDir: '.',
+                    reportFiles: 'zap_report.json',
+                    keepAll: true,
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    includeInEmail: true
+                ])
+                // Add DAST scanning steps here (e.g., using OWASP ZAP, etc.)
+            }
+            else{
+                echo 'ZAP scan completed successfully with no vulnerabilities found.'
+            }
+            }
+        }
+        post {
+            always {
+                echo 'archiving zap scan reports.'
+                archiveArtifacts artifacts: 'zap_report.html', fingerprint: true
+            }
+        }        
+    }
 }
+ post {
+    always {
+        script {
+            def buildStatus = currentBuild.currentResult
+            def buildUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')[0]?.userId ?: 'Github User'
+            def buildUrl = env.BUILD_URL
+
+            // slack notification
+        }
+    }
+}  
