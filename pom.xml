@@ -37,6 +37,7 @@
 		<java.version>21</java.version>
 		<maven.compiler.source>21</maven.compiler.source>
     	<maven.compiler.target>21</maven.compiler.target>
+		<maven.compiler.release>21</maven.compiler.release>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -115,7 +116,7 @@
 		    <plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.2.5</version> <!-- Update to the latest version if needed -->
+				<version>3.5.6</version> <!-- Update to the latest version if needed -->
 				<configuration>
 					<skipTests>true</skipTests>
 				</configuration>
