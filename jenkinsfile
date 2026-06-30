@@ -33,45 +33,20 @@ pipeline {
             }
         }
         stage('Maven Build') {
-          steps {
-                script {
-                    echo "--- NATIVELY PROVISIONING PORTABLE JDK 21 ---"
-                    
-                    // 1. Download official portable OpenJDK 21 binary directly into the workspace
-                    sh '''
-                        if [ ! -d "jdk-21" ]; then
-                            echo "Downloading JDK 21..."
-                            curl -L -o openjdk21.tar.gz https://download.java.net/java/GA/jdk21/fd2272bde4e24c748c7c0279d00d7de3/35/GPL/openjdk-21_linux-x64_bin.tar.gz
-                            tar -xzf openjdk21.tar.gz
-                            mv jdk-21* jdk-21
-                            rm openjdk21.tar.gz
-                        fi
-                    '''
-                    
-                    // 2. Define the absolute path of the newly extracted JDK 21
-                    def localJavaHome = "${WORKSPACE}/jdk-21"
-                    
-                    // 3. Force Maven to build using this local workspace compiler
-                    withEnv([
-                        "JAVA_HOME=${localJavaHome}",
-                        "PATH=${localJavaHome}/bin:${env.PATH}"
-                    ]) {
-                        echo "--- VERIFYING LOCAL COMPILER VERSION ---"
-                        sh 'java -version'
-                        sh 'javac -version'
-                        
-                        // Execute the build using our guaranteed Java 21 path
-                        sh 'mvn clean install -DskipTests'
-                    }
-                }
-            }
-            post {
-                success {
-                    echo 'Maven Build Successful'
-                    archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-                }
-            }
-        }        stage('unit test') {
+    steps {
+        sh 'java -version'
+        sh 'javac -version'
+        sh 'mvn -version'
+        sh 'mvn clean install -DskipTests'
+    }
+    post {
+        success {
+            echo 'Maven Build Successful'
+            archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+        }
+    }
+}       
+        stage('unit test') {
             steps {
                 sh 'mvn test'
             }
