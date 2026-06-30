@@ -22,9 +22,9 @@
 	</licenses>
 	<developers>
 		<developer>
-			<id>rohanchintalwar</id>
-			<name>Rohan Chintalwar</name>
-			<email>rohanchintalwar27@gmail.com</email>
+			<id>OmkarAware</id>
+			<name>Omkar Aware</name>
+			<email>omkaraware1301@gmail.com</email>
 		</developer>
 	</developers>
 	<scm>
@@ -35,6 +35,8 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<maven.compiler.source>21</maven.compiler.source>
+    	<maven.compiler.target>21</maven.compiler.target>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -97,12 +99,23 @@
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.9.16</version> <!-- Update to the latest version if needed -->
+				<configuration>
+					<source>21</source>
+					<target>21</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
-			<plugin>
+
+		    <plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.22.2</version> <!-- Update to the latest version if needed -->
+				<version>3.2.5</version> <!-- Update to the latest version if needed -->
 				<configuration>
 					<skipTests>true</skipTests>
 				</configuration>
