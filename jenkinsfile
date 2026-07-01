@@ -10,7 +10,7 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
         NEXUS_VERSION = 'nexus3'
         NEXUS_PROTOCOL = 'http'
-        NEXUS_URL = '13.207.202.131:8081'
+        NEXUS_URL = '65.0.60.215:8081'
         NEXUS_REPOSITORY = 'devops-repo'
         NEXUS_REPO_ID = 'devops-repo'
         NEXUS_CREDENTIALS_ID = 'nexus-cred'
@@ -20,6 +20,7 @@ pipeline {
         registry = 'https://931680509142.dkr.ecr.ap-south-1.amazonaws.com/'
         IMAGE_NAME = '931680509142.dkr.ecr.ap-south-1.amazonaws.com/'
     }
+    
     stages {
         stage('Clean Workspace') {
             steps {
@@ -33,34 +34,26 @@ pipeline {
             }
         }
         stage('Maven Build') {
-          steps {
+            steps {
                 script {
-                    echo "--- NATIVELY PROVISIONING PORTABLE JDK 21 ---"
+                    // 1. Force Jenkins to resolve the dynamic installation directory path for jdk21 and maven3
+                    def javaHomeDir = tool name: 'jdk21', type: 'jdk'
+                    def mavenHomeDir = tool name: 'maven3', type: 'hudson.tasks.Maven$MavenInstallation'
                     
-                    // 1. Download official portable OpenJDK 21 binary directly into the workspace
-                    sh '''
-                        if [ ! -d "jdk-21" ]; then
-                            echo "Downloading JDK 21..."
-                            curl -L -o openjdk21.tar.gz https://download.java.net/java/GA/jdk21/fd2272bde4e24c748c7c0279d00d7de3/35/GPL/openjdk-21_linux-x64_bin.tar.gz
-                            tar -xzf openjdk21.tar.gz
-                            mv jdk-21* jdk-21
-                            rm openjdk21.tar.gz
-                        fi
-                    '''
-                    
-                    // 2. Define the absolute path of the newly extracted JDK 21
-                    def localJavaHome = "${WORKSPACE}/jdk-21"
-                    
-                    // 3. Force Maven to build using this local workspace compiler
+                    // 2. Wrap the execution context with these strict paths overriding everything else
                     withEnv([
-                        "JAVA_HOME=${localJavaHome}",
-                        "PATH=${localJavaHome}/bin:${env.PATH}"
+                        "JAVA_HOME=${javaHomeDir}",
+                        "M2_HOME=${mavenHomeDir}",
+                        "PATH=${javaHomeDir}/bin:${mavenHomeDir}/bin:${env.PATH}"
                     ]) {
-                        echo "--- VERIFYING LOCAL COMPILER VERSION ---"
+                        // 3. Print out a debug log to your console to guarantee Java 21 is active
+                        echo "--- VERIFYING PIPELINE EXECUTION ENGINES ---"
                         sh 'java -version'
                         sh 'javac -version'
+                        sh 'mvn -version'
+                        echo "--------------------------------------------"
                         
-                        // Execute the build using our guaranteed Java 21 path
+                        // 4. Run the build cleanly with your explicit paths
                         sh 'mvn clean install -DskipTests'
                     }
                 }
@@ -71,7 +64,8 @@ pipeline {
                     archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
                 }
             }
-        }        stage('unit test') {
+        }
+        stage('unit test') {
             steps {
                 sh 'mvn test'
             }
@@ -81,7 +75,7 @@ pipeline {
                 }
                 failure {
                     echo 'Unit Tests Failed'
-                    junit '**/target/surefire-reports/*.xml'
+                    junit '*/target/surefire-reports/.xml'
                 }
             }
         }
@@ -95,7 +89,7 @@ pipeline {
                 }
                 failure {
                     echo 'Integration Tests Failed'
-                    junit '**/target/failsafe-reports/*.xml'
+                    junit '*/target/failsafe-reports/.xml'
                 }
             }
         }
