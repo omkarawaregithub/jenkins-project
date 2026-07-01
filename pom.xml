@@ -99,7 +99,7 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
+				<groupId>org.apache.maven.plugin</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version> <!-- Update to the latest version if needed -->
 				<configuration>
