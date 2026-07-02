@@ -38,8 +38,6 @@ pipeline {
                         // 4. Run the build cleanly with your explicit paths
                         sh 'mvn clean install -DskipTests'
                     }
-                }
-            }
             post {
                 success {
                     echo 'Maven Build Successful'
