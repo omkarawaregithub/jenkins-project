@@ -99,7 +99,6 @@ pipeline {
                         -Dsonar.projectKey=devops-project \
                         -Dsonar.sources=src/main/java \
                         -Dsonar.tests=src/test/java \
-                        -Dsonar.sources=. \
                         -Dsonar.java.binaries=target/classes \
                         -Dsonar.junit.reportPaths=target/surefire-reports \
                         -Dsonar.jacoco.reportPaths=target/jacoco.exec \
