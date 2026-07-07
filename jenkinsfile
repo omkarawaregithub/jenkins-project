@@ -189,6 +189,7 @@ pipeline {
                     sh "docker tag ${IMAGE_NAME}:latest ${env.IMAGE_TAG}"*/
                     /*def IMAGE_TAG = env.BUILD_NUMBER*/
                     env.FULL_IMAGE = "${env.IMAGE_NAME}:${BUILD_NUMBER}"
+                    echo "Building Docker image: ${env.FULL_IMAGE}"
 
                     sh "docker build -t ${FULL_IMAGE} ."
                 }
