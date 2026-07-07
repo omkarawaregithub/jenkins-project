@@ -221,7 +221,7 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry(registry, registrycredential) {
-                        dockerImage.push("${env.FULL_IMAGE}")
+                        dockerImage.push("${BUILD_NUMBER}")
                         //sh "docker push ${env.IMAGE_TAG}"
                     }
                 }
