@@ -180,42 +180,42 @@ pipeline {
             }
         }
         stage('build docker image') {
-            steps {
-                script {
-                    /*env.IMAGE_TAG = "${IMAGE_NAME}:${BUILD_NUMBER}"
-                    sh "docker rmi -f ${IMAGE_NAME}:latest ${env.IMAGE_TAG} || true "
-                    
-                    dockerImage = docker.build("${IMAGE_NAME}:latest", '.')
-                    sh "docker tag ${IMAGE_NAME}:latest ${env.IMAGE_TAG}"*/
-                    def IMAGE_TAG = env.BUILD_NUMBER
-                    def FULL_IMAGE = "${env.IMAGE_NAME}:${IMAGE_TAG}"
+                steps {
+                    script {
+                        /*env.IMAGE_TAG = "${IMAGE_NAME}:${BUILD_NUMBER}"
+                        sh "docker rmi -f ${IMAGE_NAME}:latest ${env.IMAGE_TAG} || true "
+                        
+                        dockerImage = docker.build("${IMAGE_NAME}:latest", '.')
+                        sh "docker tag ${IMAGE_NAME}:latest ${env.IMAGE_TAG}"*/
+                        def IMAGE_TAG = env.BUILD_NUMBER
+                        def FULL_IMAGE = "${env.IMAGE_NAME}:${IMAGE_TAG}"
 
-                    sh "docker build -t ${FULL_IMAGE} ."
+                        sh "docker build -t ${FULL_IMAGE} ."
+                    }
+                }
+            stage('trivy scan image') { 
+                steps {
+                    sh """
+                    echo 'Running trivy scan on Docker image : ${env.IMAGE_NAME}'
+                    trivy image -f html -o trivy-image-scan-report.html ${env.IMAGE_NAME}
+                    trivy image -f table -o trivy-image-scan-report.txt ${env.IMAGE_NAME}
+                    """
+                }
+                post {
+                    success {
+                        echo 'Trivy Image Scan completed successfully'
+                        publishHTML(target: [
+                            reportName: 'Trivy Image Scan Report',
+                            reportDir: '.',
+                            reportFiles: 'trivy-image-scan-report.html',
+                            keepAll: true,
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            includeInEmail: true
+                        ])
+                    }
                 }
             }
-        stage('trivy scan image') { 
-            steps {
-                sh """
-                echo 'Running trivy scan on Docker image : ${env.IMAGE_NAME}'
-                trivy image -f html -o trivy-image-scan-report.html ${env.IMAGE_NAME}
-                trivy image -f table -o trivy-image-scan-report.txt ${env.IMAGE_NAME}
-                """
-            }
-            post {
-                success {
-                    echo 'Trivy Image Scan completed successfully'
-                    publishHTML(target: [
-                        reportName: 'Trivy Image Scan Report',
-                        reportDir: '.',
-                        reportFiles: 'trivy-image-scan-report.html',
-                        keepAll: true,
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        includeInEmail: true
-                    ])
-                }
-            }
-        }
         }
         stage('Upload application image to ECR') {
             steps {
