@@ -193,7 +193,6 @@ pipeline {
                     sh "docker build -t ${FULL_IMAGE} ."
                 }
             }
-        }
         stage('trivy scan image') { 
             steps {
                 sh """
@@ -216,6 +215,7 @@ pipeline {
                     ])
                 }
             }
+        }
         }
         stage('Upload application image to ECR') {
             steps {
