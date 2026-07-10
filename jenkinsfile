@@ -221,8 +221,12 @@ pipeline {
         stage('Upload application image to ECR') {
             steps {
                 script {
-                    docker.withRegistry(registry, registrycredential) {
+                    docker.withRegistry(
+                        "https://931680509142.dkr.ecr.ap-south-1.amazonaws.com/",
+                        "ecr-ap-south-1:awscrdes"
+                    ) {
                         //dockerImage.push("${BUILD_NUMBER}")
+                        sh "docker images"
                         sh "docker push ${env.IMAGE_TAG}"
                     }
                 }
