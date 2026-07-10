@@ -218,7 +218,26 @@ pipeline {
                 }
             }
         }
+        stage('Login to ECR') {
+            steps {
+            sh '''
+            aws ecr get-login-password --region ap-south-1 | \
+            docker login \
+            --username AWS \
+            --password-stdin 931680509142.dkr.ecr.ap-south-1.amazonaws.com
+            '''
+            }
+        }
         stage('Upload application image to ECR') {
+            steps {
+                //script {
+                    // docker.withRegistry(registry, registrycredential) {
+                        //dockerImage.push("${env.FULL_IMAGE}")//
+                        sh "docker push ${env.FULL_IMAGE}"
+                    //}
+            }
+        }
+        /*stage('Upload application image to ECR') {
             steps {
                 script {
                     docker.withRegistry(
@@ -231,7 +250,7 @@ pipeline {
                     }
                 }
             }
-        }
+        }*/
         stage('Deploy to Container') {
             steps {
                 echo 'Deploying application to container...'
