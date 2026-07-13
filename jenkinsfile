@@ -256,7 +256,7 @@ pipeline {
                 echo 'Deploying application to container...'
                 script {
                     sh "docker rm -f devops-repo || true"
-                    sh "docker run -d --name devops-repo -p 8080:8080 ${env.IMAGE_TAG}"
+                    sh "docker run -d --name devops-repo -p 8081:8080 ${env.IMAGE_TAG}"
                 }
             }
         }
@@ -268,7 +268,7 @@ pipeline {
                     def exitCode = sh(script: '''
                         docker run --rm --user root --network host -v \$(pwd):/zap/wrk:rw \
                         ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-                        -t http://localhost:8080 \
+                        -t http://localhost:8081 \
                         -r zap_report.html -J zap_report.json || true
                     ''', returnStatus: true)
 
