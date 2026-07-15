@@ -311,7 +311,8 @@ pipeline {
             script {
                 // ⚠️ FIX: Instantiated variables here so both notifications can access them globally
                 def buildStatus = currentBuild.currentResult
-                def buildUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')[0]?.userId ?: 'Git Trigger'
+                def causes = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+                def buildUser = causes ? causes[0].userId : 'Git Trigger'
                 def buildUrl = env.BUILD_URL
 
                 /* Slack Notification
