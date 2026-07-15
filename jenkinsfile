@@ -323,21 +323,25 @@ pipeline {
                 )*/
 
                 // Email Notification placed inside script block to easily read scope variables safely
-                emailext (
-                    subject: "Build Pipeline ${buildStatus}: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
-                    body: """
-                        <p>Maven and Devops CI-CD Pipeline Build Status</p>
-                        <p>Build Status: <b>${buildStatus}</b></p>
-                        <p>Project: <b>${env.JOB_NAME}</b></p>
-                        <p>Build Number: <b>${env.BUILD_NUMBER}</b></p>
-                        <p>Started by: <b>${buildUser}</b></p>
-                        <p>Build URL: <a href="${buildUrl}">${buildUrl}</a></p>
-                    """,
-                    to: 'omkaraware1301@gmail.com',
-                    from: 'omkaraware1301@gmail.com',
-                    mimeType: 'text/html',
-                    attachmentsPattern: 'zap_report.html,trivy-file-scan-report.html,trivy-image-scan-report.html,target/site/checkstyle.html,target/dependency-check-report/dependency-check-report.html'
-                )        
+                try{ 
+                    emailext (
+                        subject: "Build Pipeline ${buildStatus}: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                        body: """
+                            <p>Maven and Devops CI-CD Pipeline Build Status</p>
+                            <p>Build Status: <b>${buildStatus}</b></p>
+                            <p>Project: <b>${env.JOB_NAME}</b></p>
+                            <p>Build Number: <b>${env.BUILD_NUMBER}</b></p>
+                            <p>Started by: <b>${buildUser}</b></p>
+                            <p>Build URL: <a href="${buildUrl}">${buildUrl}</a></p>
+                        """,
+                        to: 'omkaraware1301@gmail.com',
+                        from: 'omkaraware1301@gmail.com',
+                        mimeType: 'text/html',
+                        attachmentsPattern: 'zap_report.html,trivy-file-scan-report.html,trivy-image-scan-report.html,target/site/checkstyle.html'
+                    )  
+                }catch (Exception e) {
+                    echo "Email notification failed: ${e.getMessage()}"
+                }          
             }
         }
     } 
