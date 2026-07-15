@@ -335,12 +335,12 @@ pipeline {
                             <p>Build URL: <a href="${buildUrl}">${buildUrl}</a></p>
                         """,
                         to: 'omkaraware1301@gmail.com',
-                        from: 'omkaraware1301@gmail.com',
+                        //from: 'omkaraware1301@gmail.com',
                         mimeType: 'text/html',
-                        attachmentsPattern: 'zap_report.html,trivy-file-scan-report.html,trivy-image-scan-report.html,target/site/checkstyle.html'
+                        attachmentsPattern: 'zap_report.html,trivy-file-scan-report.html,trivy-image-scan-report.html'
                     )  
                 }catch (Exception e) {
-                    echo "Email notification failed: ${e.getMessage()}"
+                    echo "Email notification failed: ${e}"
                 }          
             }
         }
