@@ -314,12 +314,12 @@ pipeline {
                 def buildUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')[0]?.userId ?: 'Git Trigger'
                 def buildUrl = env.BUILD_URL
 
-                // Slack Notification
+                /* Slack Notification
                 slackSend (
                     channel: '#devops-cicd',
                     color: buildStatus == 'SUCCESS' ? 'good' : 'danger',
                     message: "${buildStatus}: Job ${env.JOB_NAME} BUILD #${env.BUILD_NUMBER}\nStarted by: ${buildUser}\nBuild URL: ${buildUrl}"
-                )
+                )*/
 
                 // Email Notification placed inside script block to easily read scope variables safely
                 emailext (
