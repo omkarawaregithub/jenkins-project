@@ -82,7 +82,7 @@ pipeline {
                     echo 'Checkstyle analysis completed successfully'
                     publishHTML(target: [
                         reportName: 'Checkstyle Report',
-                        reportDir: 'target/site',
+                        reportDir: 'target/reports',
                         reportFiles: 'checkstyle.html',
                         keepAll: true,
                         allowMissing: false,
