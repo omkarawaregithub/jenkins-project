@@ -10,7 +10,7 @@ pipeline {
         SCANNER_HOME = tool 'sonar-scanner'
         NEXUS_VERSION = 'nexus3'
         NEXUS_PROTOCOL = 'http'
-        NEXUS_URL = '13.202.81.161:8081'
+        NEXUS_URL = '13.206.250.139:8081'
         NEXUS_REPOSITORY = 'devops-repo'
         NEXUS_REPO_ID = 'devops-repo'
         NEXUS_CREDENTIALS_ID = 'nexus-cred'
@@ -272,7 +272,7 @@ pipeline {
                     def exitCode = sh(script: '''
                         docker run --rm --user root --network host -v \$(pwd):/zap/wrk:rw \
                         ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-                        -t http://13.206.124.218:8081/dashboard \
+                        -t http://13.206.250.138:8081/dashboard \
                         -r zap_report.html -J zap_report.json || true
                     ''', returnStatus: true)
 
@@ -337,7 +337,7 @@ pipeline {
                         to: 'omkaraware1301@gmail.com',
                         from: 'omkaraware1301@gmail.com',
                         mimeType: 'text/html',
-                        attachmentsPattern: 'zap_report.html,trivy-file-scan-report.html,trivy-image-scan-report.html,target/site/checkstyle.html'
+                        attachmentsPattern: 'zap_report.html,trivy-file-scan-report.html,trivy-image-scan-report.html,target/reports/checkstyle.html'
                     )  
                 }catch (Exception e) {
                     echo "Email notification failed: ${e.getMessage()}"
